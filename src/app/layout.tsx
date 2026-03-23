@@ -4,6 +4,9 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider-enhanced";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { ToastProvider } from "@/components/ui/toast";
+import { NotificationProvider } from "@/context/NotificationContext";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -38,7 +41,9 @@ export default function RootLayout({
         <ThemeProvider>
           <AnalyticsProvider>
             <AuthProvider>
-              {children}
+              <ToastProvider>
+                <NotificationProvider>{children}</NotificationProvider>
+              </ToastProvider>
             </AuthProvider>
           </AnalyticsProvider>
         </ThemeProvider>
