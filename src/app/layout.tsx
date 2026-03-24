@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider-enhanced";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AnalyticsProvider } from "@/components/analytics-provider";
+import { LoadingProvider } from "@/contexts/LoadingContext";
+import GlobalLoader from "@/components/loaders/GlobalLoader";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -38,7 +40,10 @@ export default function RootLayout({
         <ThemeProvider>
           <AnalyticsProvider>
             <AuthProvider>
-              {children}
+              <LoadingProvider>
+                <GlobalLoader />
+                {children}
+              </LoadingProvider>
             </AuthProvider>
           </AnalyticsProvider>
         </ThemeProvider>
