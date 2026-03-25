@@ -8,6 +8,7 @@ import ProposalStats from "./ProposalStats";
 import ProposalFilters from "./ProposalFilters";
 import { Proposal, VoteType } from "@/types/dao-types";
 import { getProposalStats } from "@/lib/dao-utils";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface DAOVotingClientProps {
   initialProposals: Proposal[];
@@ -19,6 +20,16 @@ export default function DAOVotingClient({
   const [proposals, setProposals] = useState<Proposal[]>(initialProposals);
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [votingProposalId, setVotingProposalId] = useState<string | null>(null);
+  const { 
+    executeWithErrorHandling, 
+    error: voteError, 
+    clearError,
+    showSuccessNotification 
+  } = useErrorHandler({
+    autoLog: true,
+    showNotifications: true,
+  });
 
   /**
    * Handle vote submission
@@ -28,41 +39,59 @@ export default function DAOVotingClient({
     proposalId: string,
     voteType: VoteType,
   ): Promise<void> => {
-    // Simulate blockchain transaction delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    clearError();
+    setVotingProposalId(proposalId);
 
-    setProposals((prevProposals) =>
-      prevProposals.map((proposal) => {
-        if (proposal.id === proposalId) {
-          const voteAmount = proposal.userVotingPower;
+    await executeWithErrorHandling(
+      async () => {
+        // Simulate blockchain transaction delay
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
-          // Update vote counts based on vote type
-          const updatedVotes = {
-            votesFor:
-              voteType === "for"
-                ? proposal.votesFor + voteAmount
-                : proposal.votesFor,
-            votesAgainst:
-              voteType === "against"
-                ? proposal.votesAgainst + voteAmount
-                : proposal.votesAgainst,
-            votesAbstain:
-              voteType === "abstain"
-                ? proposal.votesAbstain + voteAmount
-                : proposal.votesAbstain,
-          };
+        setProposals((prevProposals) =>
+          prevProposals.map((proposal) => {
+            if (proposal.id === proposalId) {
+              const voteAmount = proposal.userVotingPower;
 
-          return {
-            ...proposal,
-            ...updatedVotes,
-            totalVotes: proposal.totalVotes + voteAmount,
-            hasVoted: true,
-            userVote: voteType,
-          };
-        }
-        return proposal;
-      }),
+              // Update vote counts based on vote type
+              const updatedVotes = {
+                votesFor:
+                  voteType === "for"
+                    ? proposal.votesFor + voteAmount
+                    : proposal.votesFor,
+                votesAgainst:
+                  voteType === "against"
+                    ? proposal.votesAgainst + voteAmount
+                    : proposal.votesAgainst,
+                votesAbstain:
+                  voteType === "abstain"
+                    ? proposal.votesAbstain + voteAmount
+                    : proposal.votesAbstain,
+              };
+
+              return {
+                ...proposal,
+                ...updatedVotes,
+                totalVotes: proposal.totalVotes + voteAmount,
+                hasVoted: true,
+                userVote: voteType,
+              };
+            }
+            return proposal;
+          }),
+        );
+
+        return { proposalId, voteType };
+      },
+      'SYSTEM',
+      'DAO_VOTE_FAILED',
+      { proposalId, voteType }
     );
+
+    if (!voteError) {
+      showSuccessNotification(`Vote submitted successfully!`);
+    }
+
+    setVotingProposalId(null);
   };
 
   /**
@@ -100,6 +129,31 @@ export default function DAOVotingClient({
               + New Proposal
             </button>
           </div>
+
+          {/* Display vote errors */}
+          {voteError && (
+            <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+              <div className="flex gap-3">
+                <AlertCircle className="h-6 w-6 flex-shrink-0 text-red-500" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-red-500">Vote Failed</h3>
+                  <p className="mt-1 text-sm text-red-400">{voteError.message}</p>
+                  {voteError.recoverySuggestion && (
+                    <p className="mt-2 text-sm text-red-300">{voteError.recoverySuggestion}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={clearError}
+                  className="flex-shrink-0 text-red-400 hover:text-red-300"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Statistics Cards */}
           <ProposalStats
