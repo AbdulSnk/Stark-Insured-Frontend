@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider-enhanced";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -41,14 +42,20 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
       >
         <ThemeProvider>
-          <AnalyticsProvider>
-            <AuthProvider>
-              <LoadingProvider>
-                <GlobalLoader />
-                {children}
-              </LoadingProvider>
-            </AuthProvider>
-          </AnalyticsProvider>
+          <Suspense fallback={null}>
+            <AnalyticsProvider>
+              <ToastProvider>
+                <NotificationProvider>
+                  <AuthProvider>
+                    <LoadingProvider>
+                      <GlobalLoader />
+                      {children}
+                    </LoadingProvider>
+                  </AuthProvider>
+                </NotificationProvider>
+              </ToastProvider>
+            </AnalyticsProvider>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

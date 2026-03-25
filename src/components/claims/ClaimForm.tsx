@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { useLoading } from '@/contexts/LoadingContext';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import {
   required,
   positiveNumber,
@@ -45,7 +46,16 @@ export const ClaimForm = () => {
   });
 
   const [isSuccess, setIsSuccess] = useState(false);
-      const { loading ,startLoading, stopLoading } = useLoading();
+  const { loading, startLoading, stopLoading } = useLoading();
+  const { 
+    executeWithErrorHandling, 
+    error: submitError, 
+    clearError,
+    showSuccessNotification 
+  } = useErrorHandler({
+    autoLog: true,
+    showNotifications: true,
+  });
 
   // Derived state — used in conditional validation for the amount field
   const selectedPolicy = mockPolicies.find((p) => p.id === formData.policyId);
@@ -110,14 +120,34 @@ export const ClaimForm = () => {
     e.preventDefault();
     if (!validate(formData)) return;
 
+    clearError();
     startLoading();
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    
+    const result = await executeWithErrorHandling(
+      async () => {
+        // Simulate API call to submit claim
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        
+        // Simulate successful submission
+        return {
+          refNo: `CLM-${Math.floor(Math.random() * 10000)}`,
+          status: 'pending',
+        };
+      },
+      'SYSTEM',
+      'CLAIM_SUBMISSION_FAILED',
+      {
+        policyId: formData.policyId,
+        amount: formData.amount,
+      }
+    );
+
+    stopLoading();
+
+    if (result) {
+      showSuccessNotification('Claim submitted successfully!');
       setIsSuccess(true);
-    } finally {
-      stopLoading();
-}
+    }
   };
 
   // ── Success state ─────────────────────────────────────────────────────────────
@@ -161,6 +191,33 @@ export const ClaimForm = () => {
           Please provide details about the incident. Our team will review your submission shortly.
         </p>
       </div>
+
+      {/* Display submission errors */}
+      {submitError && (
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 md:p-6 shadow-xl">
+          <div className="flex gap-3">
+            <svg className="h-6 w-6 flex-shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-500">Submission Failed</h3>
+              <p className="mt-1 text-sm text-red-400">{submitError.message}</p>
+              {submitError.recoverySuggestion && (
+                <p className="mt-2 text-sm text-red-300">{submitError.recoverySuggestion}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={clearError}
+              className="flex-shrink-0 text-red-400 hover:text-red-300"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-sm sm:p-8 space-y-6 shadow-xl">
 

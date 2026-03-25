@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMultiStepForm } from '@/hooks/useMultiStepForm';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { ProgressStepper, type Step } from '@/components/ui/ProgressStepper';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -82,6 +83,15 @@ export const MultiStepClaimForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [claimId, setClaimId] = useState<string>('');
+  const { 
+    executeWithErrorHandling, 
+    error: submitError, 
+    clearError,
+    showSuccessNotification 
+  } = useErrorHandler({
+    autoLog: true,
+    showNotifications: true,
+  });
 
   const {
     currentStep,
@@ -118,24 +128,37 @@ export const MultiStepClaimForm: React.FC = () => {
   const handleSubmit = async () => {
     if (!isStepValid(currentStep)) return;
 
+    clearError();
     setIsSubmitting(true);
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Generate claim ID
-      const newClaimId = `CLM-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-      setClaimId(newClaimId);
-      
+    const result = await executeWithErrorHandling(
+      async () => {
+        // Simulate API call to submit multi-step claim
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Generate claim ID
+        const newClaimId = `CLM-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+        setClaimId(newClaimId);
+        
+        // Return the claim id from the async operation
+        return newClaimId;
+      },
+      'SYSTEM',
+      'MULTI_STEP_CLAIM_SUBMISSION_FAILED',
+      {
+        policyId: formData.policyId,
+        claimAmount: formData.claimAmount,
+        documentCount: formData.documents.length,
+      }
+    );
+
+    setIsSubmitting(false);
+
+    if (result) {
       // Clear draft and show success
       clearDraft();
       setIsSuccess(true);
-    } catch (error) {
-      console.error('Claim submission failed:', error);
-      // Handle error (show error message, etc.)
-    } finally {
-      setIsSubmitting(false);
+      showSuccessNotification('Claim submitted successfully!');
     }
   };
 
@@ -227,6 +250,33 @@ export const MultiStepClaimForm: React.FC = () => {
             </div>
           </div>
         </Card>
+      )}
+
+      {/* Display submission errors */}
+      {submitError && (
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 md:p-6 shadow-xl">
+          <div className="flex gap-3">
+            <svg className="h-6 w-6 flex-shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-500">Submission Failed</h3>
+              <p className="mt-1 text-sm text-red-400">{submitError.message}</p>
+              {submitError.recoverySuggestion && (
+                <p className="mt-2 text-sm text-red-300">{submitError.recoverySuggestion}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={clearError}
+              className="flex-shrink-0 text-red-400 hover:text-red-300"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Progress Stepper */}
