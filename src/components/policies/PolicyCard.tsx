@@ -8,7 +8,7 @@ interface PolicyCardProps {
 
 export const PolicyCard = ({ policy }: PolicyCardProps) => {
   return (
-    <div className="bg-brand-card rounded-xl p-6 border border-brand-border flex flex-col gap-6">
+    <article className="bg-brand-card rounded-xl p-6 border border-brand-border flex flex-col gap-6" role="article" aria-label={`Policy card for ${policy.name}`}>
       <div className="flex justify-between items-start">
         <h3 className="text-xl font-bold leading-tight max-w-[70%]">
           {policy.name}
@@ -21,6 +21,8 @@ export const PolicyCard = ({ policy }: PolicyCardProps) => {
                 ? "bg-yellow-500/20 text-yellow-500"
                 : "bg-red-500/20 text-red-500"
           }`}
+          role="status"
+          aria-label={`Policy status: ${policy.status}`}
         >
           {policy.status}
         </span>
@@ -54,9 +56,10 @@ export const PolicyCard = ({ policy }: PolicyCardProps) => {
       <Link
         href={`/policies/${policy.id}`}
         className="w-full bg-brand-primary hover:bg-brand-primary-hover text-brand-bg font-heavy py-3 rounded-lg text-center transition-colors font-bold uppercase text-sm tracking-wider"
+        aria-label={`View details for ${policy.name} policy`}
       >
         View Details
       </Link>
-    </div>
+    </article>
   );
 };

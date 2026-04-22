@@ -182,19 +182,19 @@ export const ClaimForm = () => {
   // ── Form ──────────────────────────────────────────────────────────────────────
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-8 animate-slide-up" noValidate>
+    <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-8 animate-slide-up" noValidate aria-labelledby="claim-form-heading" aria-describedby="claim-form-description">
       <div className="space-y-2 text-center sm:text-left">
-        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        <h1 id="claim-form-heading" className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
           File a New Claim
         </h1>
-        <p className="text-lg text-slate-400">
+        <p id="claim-form-description" className="text-lg text-slate-400">
           Please provide details about the incident. Our team will review your submission shortly.
         </p>
       </div>
 
       {/* Display submission errors */}
       {submitError && (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 md:p-6 shadow-xl">
+        <div role="alert" aria-live="polite" className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 md:p-6 shadow-xl">
           <div className="flex gap-3">
             <svg className="h-6 w-6 flex-shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

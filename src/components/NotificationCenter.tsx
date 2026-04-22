@@ -99,11 +99,13 @@ export function NotificationCenter() {
         id="notification-bell"
         onClick={toggleVisibility}
         className="relative p-2 rounded-full hover:bg-gray-800 transition-colors"
-        aria-label="Notifications"
+        aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+        aria-expanded={isVisible}
+        aria-haspopup="true"
       >
         <BellIcon className="h-5 w-5 text-white" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-xs rounded-full flex items-center justify-center text-white">
+          <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-xs rounded-full flex items-center justify-center text-white" role="status" aria-label={`${unreadCount} unread notifications`}>
             {unreadCount}
           </span>
         )}
@@ -114,6 +116,9 @@ export function NotificationCenter() {
         <div
           id="notification-center"
           className="absolute right-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden"
+          role="region"
+          aria-label="Notification center"
+          aria-live="polite"
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
@@ -122,6 +127,7 @@ export function NotificationCenter() {
               <button
                 onClick={markAllAsRead}
                 className="text-sm text-gray-300 hover:text-white"
+                aria-label="Mark all notifications as read"
               >
                 Mark all as read
               </button>
@@ -131,11 +137,11 @@ export function NotificationCenter() {
           {/* Notifications List */}
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center text-gray-400" role="status">
                 No notifications yet
               </div>
             ) : (
-              <ul>
+              <ul role="list" aria-label="Notification list">
                 {notifications.map((notification: Notification) => (
                   <li
                     key={notification.id}
@@ -169,6 +175,7 @@ export function NotificationCenter() {
                               onClick={() => markAsRead(notification.id)}
                               className="text-gray-400 hover:text-white p-1"
                               title="Mark as read"
+                              aria-label={`Mark notification "${notification.title}" as read`}
                             >
                               <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                             </button>
@@ -177,6 +184,7 @@ export function NotificationCenter() {
                             onClick={() => removeNotification(notification.id)}
                             className="text-gray-400 hover:text-white p-1"
                             title="Dismiss"
+                            aria-label={`Dismiss notification "${notification.title}"`}
                           >
                             <CloseIcon className="h-4 w-4" />
                           </button>

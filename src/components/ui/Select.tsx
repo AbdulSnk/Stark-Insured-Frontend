@@ -55,6 +55,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               ${hasError || isSuccess ? "pr-16" : "pr-10"}
               ${borderState} ${className}`}
             aria-invalid={hasError}
+            aria-describedby={
+              hasError || props['aria-describedby'] ? `${props.id}-description` : undefined
+            }
+            aria-haspopup="listbox"
             {...props}
           >
             {placeholder && (
@@ -118,7 +122,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
         {/* Error text with icon */}
         {error && (
-          <p className="mt-1 flex items-center gap-1 text-sm text-rose-400">
+          <p id={`${props.id}-description`} className="mt-1 flex items-center gap-1 text-sm text-rose-400" role="alert">
             <svg
               className="h-3.5 w-3.5 shrink-0"
               fill="none"

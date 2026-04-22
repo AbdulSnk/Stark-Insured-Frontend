@@ -12,6 +12,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, error, onChange, 
     const [dragActive, setDragActive] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const dropZoneRef = useRef<HTMLDivElement>(null);
 
     const handleDrag = (e: React.DragEvent) => {
         e.preventDefault();
@@ -52,12 +53,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, error, onChange, 
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            inputRef.current?.click();
+        }
+    };
+
     return (
         <div className="w-full">
             <label className="mb-2 block text-sm font-medium text-slate-300">
                 {label}
             </label>
             <div
+                ref={dropZoneRef}
                 className={`
           relative flex min-h-[160px] flex-col items-center justify-center rounded-lg border-2 border-dashed transition-all
           ${dragActive
@@ -70,6 +79,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, error, onChange, 
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
+                role="button"
+                tabIndex={0}
+                onKeyDown={handleKeyDown}
+                aria-label={`File upload area for ${label}. ${selectedFile ? `File uploaded: ${selectedFile.name}` : 'Click or drag to upload files'}`}
+                aria-describedby={error ? 'file-upload-error' : undefined}
             >
                 <input
                     ref={inputRef}
@@ -77,6 +91,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, error, onChange, 
                     className="hidden"
                     accept={accept}
                     onChange={handleChange}
+                    aria-label={`Select file for ${label}`}
                 />
 
                 {selectedFile ? (
@@ -116,7 +131,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, error, onChange, 
                     </div>
                 )}
             </div>
-            {error && <p className="mt-1 text-sm text-rose-400">{error}</p>}
+            {error && <p id="file-upload-error" className="mt-1 text-sm text-rose-400" role="alert">{error}</p>}
         </div>
     );
 };
