@@ -43,6 +43,8 @@ export const Button: React.FC<ButtonProps> = ({
     <button
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${isLoading ? "cursor-wait" : ""} ${className}`}
       disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      role="button"
       {...props}
     >
       <span
