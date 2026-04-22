@@ -1,287 +1,377 @@
-# State Management Documentation
+# Zustand State Management Guidelines
 
 ## Overview
 
-This application uses **Zustand** for centralized state management, providing predictable state updates, time-travel debugging, and reduced prop drilling.
+This project uses **Zustand** for global state management. This document outlines when to use Zustand stores vs local component state (`useState`), naming conventions, and best practices.
 
-## Architecture
+## Existing Stores
 
-### Stores
+### 1. `walletStore` - Wallet & Authentication State
+**File:** `src/store/walletStore.ts`
 
-1. **WalletStore** (`walletStore.ts`) - Wallet connection and authentication
-2. **UIStore** (`uiStore.ts`) - Modal management, loading states, sidebar
-3. **FilterStore** (`filterStore.ts`) - Search, filters, and pagination
-4. **FormStore** (`formStore.ts`) - Form state management
+**Manages:**
+- Wallet connection status
+- Auth sessions
+- Registered users
+- Connection flow state
 
-### Hooks
+**Usage:**
+```typescript
+import { useWalletStore } from '@/store/walletStore';
 
-1. **useWallet** - Enhanced wallet connection with centralized state
-2. **useModal** - Modal management with centralized state
-3. **useFilters** - Filter and pagination management
-4. **useForm** - Form state management with async submission
-
-## Usage Examples
-
-### Wallet Connection
-
-```tsx
-import { useWallet } from '@/hooks/useWallet';
-
-function WalletButton() {
-  const { isConnected, isConnecting, connectWallet, disconnect, address } = useWallet();
-  
-  if (isConnected) {
-    return (
-      <div>
-        <span>Connected: {address}</span>
-        <button onClick={disconnect}>Disconnect</button>
-      </div>
-    );
-  }
-  
-  return (
-    <button onClick={connectWallet} disabled={isConnecting}>
-      {isConnecting ? 'Connecting...' : 'Connect Wallet'}
-    </button>
-  );
-}
+const status = useWalletStore(state => state.status);
+const session = useWalletStore(state => state.session);
 ```
 
-### Modal Management
+### 2. `formStore` - Form Submission State
+**File:** `src/store/formStore.ts`
 
-```tsx
-import { useModal } from '@/hooks/useModal';
+**Manages:**
+- Form submission status (idle, loading, success, error)
+- Form data
+- Form errors
 
-function PolicyCard() {
-  const modal = useModal('policy-purchase');
-  
-  return (
-    <div>
-      <button onClick={() => modal.open('purchase', { policyId: '123' })}>
-        Buy Policy
-      </button>
-      
-      {modal.isOpen && (
-        <PurchaseModal 
-          policyId={modal.data?.policyId}
-          onClose={modal.close}
-        />
-      )}
-    </div>
-  );
-}
+**Usage:**
+```typescript
+import { useFormStore } from '@/store/formStore';
+
+const { startSubmission, completeSubmission, failSubmission } = useFormStore();
+const formState = useFormStore(state => state.getFormState('claim-form'));
 ```
 
-### Filter Management
+### 3. `uiStore` - UI State (Modals, Loading, Sidebar)
+**File:** `src/store/uiStore.ts`
 
-```tsx
-import { usePoliciesFilters } from '@/hooks/useFilters';
+**Manages:**
+- Modal open/close state
+- Global loading states
+- Sidebar toggle state
 
-function PoliciesPage() {
-  const {
-    searchQuery,
-    activeTab,
-    currentPage,
-    setSearch,
-    setTab,
-    setPage
-  } = usePoliciesFilters();
-  
-  return (
-    <div>
-      <input 
-        value={searchQuery}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search policies..."
-      />
-      
-      <TabBar activeTab={activeTab} onTabChange={setTab} />
-      
-      <Pagination 
-        currentPage={currentPage}
-        onPageChange={setPage}
-      />
-    </div>
-  );
-}
+**Usage:**
+```typescript
+import { useUIStore } from '@/store/uiStore';
+
+const { openModal, closeModal, setLoading } = useUIStore();
+const isModalOpen = useUIStore(state => state.isModalOpen('purchase-modal'));
+const isLoading = useUIStore(state => state.isLoading('policies-listing'));
 ```
 
-### Form Management
+### 4. `filterStore` - Filter & Pagination State
+**File:** `src/store/filterStore.ts`
 
-```tsx
-import { useForm } from '@/hooks/useForm';
+**Manages:**
+- Policy filters (search, status, tab, price order, coverage range)
+- Claims filters
+- Pagination state
 
-function SignUpForm() {
-  const form = useForm('signup');
-  
-  const handleSubmit = async (formData: SignUpData) => {
-    const result = await form.submitForm(async () => {
-      return await signUpUser(formData);
-    });
-    
-    if (result) {
-      // Success - form.status is now 'success'
-      router.push('/dashboard');
-    }
-    // Error handling is automatic - form.error contains the error message
-  };
-  
-  return (
-    <form onSubmit={handleSubmit}>
-      {form.error && <div className="error">{form.error}</div>}
-      
-      <button type="submit" disabled={form.isLoading}>
-        {form.isLoading ? 'Signing up...' : 'Sign Up'}
-      </button>
-    </form>
-  );
-}
+**Usage:**
+```typescript
+import { useFilterStore } from '@/store/filterStore';
+
+const { setPoliciesSearch, setPoliciesPriceOrder } = useFilterStore();
+const policies = useFilterStore(state => state.policies);
 ```
 
-## DevTools
+---
 
-### Redux DevTools Integration
+## When to Use Zustand vs Local State
 
-All stores include Redux DevTools integration for debugging:
+### ✅ Use Zustand Stores For:
 
-1. Install Redux DevTools browser extension
-2. Open DevTools → Redux tab
-3. View state changes, time-travel debug, and inspect actions
+1. **Shared State** - State accessed by multiple components
+   - User authentication status
+   - Global loading indicators
+   - Theme preferences
+   - Notification state
 
-### Time-Travel Debugging
+2. **Persistent State** - State that should survive component unmount
+   - Filter preferences
+   - Form data across steps
+   - Pagination state
 
-- View all state changes in chronological order
-- Jump to any previous state
-- Replay actions to debug issues
-- Export/import state for testing
+3. **Complex State Logic** - State with complex update patterns
+   - Multi-step form flows
+   - Modal management
+   - Wallet connection flow
 
-## Migration Guide
+4. **Cross-Cutting Concerns** - State affecting multiple features
+   - Global error handling
+   - Analytics tracking
+   - User preferences
 
-### From Context API
+### ✅ Use Local State (`useState`) For:
 
-**Before:**
-```tsx
-const { session, setSession } = useAuth();
+1. **Component-Specific UI State** - State only relevant to one component
+   - Loading state for a single data fetch
+   - Toggle state for expandable sections
+   - Input field values (unless form is multi-step)
+
+2. **Ephemeral State** - State that doesn't need to persist
+   - Temporary hover states
+   - Animation states
+   - Local validation errors
+
+3. **Derived State** - State computed from props or other state
+   - Filtered lists
+   - Computed values
+   - Memoized calculations
+
+4. **Modal Instance State** - State specific to a modal instance
+   - Modal form data
+   - Modal-specific loading states
+   - Transaction status within modal
+
+---
+
+## Examples from Codebase
+
+### ✅ Correct: Local State for Component Loading
+
+```typescript
+// PolicyListingScreen.tsx
+const [status, setStatus] = useState<UiStatus>("loading");
 ```
 
-**After:**
-```tsx
-const { session, connectWallet, disconnect } = useWallet();
+**Why:** This loading state is specific to the PolicyListingScreen component's data fetch. It doesn't need to be shared.
+
+### ✅ Correct: Zustand for Filter State
+
+```typescript
+// Using usePolicyFilters hook which wraps useFilterStore
+const { filterState, setSearchQuery } = usePolicyFilters();
 ```
 
-### From Local State
+**Why:** Filters affect multiple components and should persist across navigation.
 
-**Before:**
-```tsx
-const [searchQuery, setSearchQuery] = useState('');
-const [currentPage, setCurrentPage] = useState(1);
+### ✅ Correct: Local State for Modal Instance
+
+```typescript
+// PolicyPurchaseEntryModal.tsx
+const [status, setStatus] = useState<PurchaseStatus>("review");
+const [errorMessage, setErrorMessage] = useState<string | null>(null);
 ```
 
-**After:**
-```tsx
-const { searchQuery, currentPage, setSearch, setPage } = usePoliciesFilters();
+**Why:** This state is specific to a single modal instance and its purchase flow.
+
+### ❌ Incorrect: When to Migrate to Zustand
+
+If you find yourself doing this:
+```typescript
+// DON'T: Passing state through many levels
+<Parent>
+  <Child1 state={state} setState={setState}>
+    <GrandChild state={state} setState={setState} />
+  </Child1>
+</Parent>
 ```
 
-### From Prop Drilling
-
-**Before:**
-```tsx
-// Parent
-<ChildComponent 
-  isModalOpen={isModalOpen}
-  onModalClose={() => setIsModalOpen(false)}
-/>
-
-// Child
-function ChildComponent({ isModalOpen, onModalClose }) {
-  return <Modal isOpen={isModalOpen} onClose={onModalClose} />;
-}
+**DO:** Move to Zustand store
+```typescript
+// DO: Access directly in any component
+const state = useMyStore(state => state.myState);
+const setState = useMyStore(state => state.setMyState);
 ```
 
-**After:**
-```tsx
-// Parent
-<ChildComponent />
-
-// Child
-function ChildComponent() {
-  const modal = useModal('my-modal');
-  return <Modal isOpen={modal.isOpen} onClose={modal.close} />;
-}
-```
+---
 
 ## Best Practices
 
-1. **Use specific hooks** - Prefer `useWallet()` over direct store access
-2. **Namespace modals** - Use descriptive modal IDs like `'policy-purchase-123'`
-3. **Reset forms** - Call `form.reset()` when component unmounts
-4. **Batch updates** - Zustand automatically batches state updates
-5. **Avoid deep nesting** - Keep store state flat for better performance
+### 1. Select Specific State
+```typescript
+// ❌ BAD: Re-renders on any store change
+const store = useMyStore();
 
-## Testing
+// ✅ GOOD: Only re-renders when count changes
+const count = useMyStore(state => state.count);
+```
 
-### Unit Testing Stores
+### 2. Use Selectors for Derived State
+```typescript
+// In store
+const useUIStore = create((set, get) => ({
+  modals: {},
+  isAnyModalOpen: () => {
+    const { modals } = get();
+    return Object.values(modals).some(m => m.isOpen);
+  }
+}));
 
-```tsx
-import { renderHook, act } from '@testing-library/react';
-import { useWalletStore } from '@/store';
+// In component
+const isAnyModalOpen = useUIStore(state => state.isAnyModalOpen());
+```
 
-test('wallet connection flow', () => {
-  const { result } = renderHook(() => useWalletStore());
+### 3. Name Actions Clearly
+```typescript
+// ✅ Good
+setLoading: (key, loading) => ...
+openModal: (id, type, data) => ...
+
+// ❌ Bad
+set: (data) => ...
+update: (val) => ...
+```
+
+### 4. Use DevTools for Debugging
+All stores are wrapped with `devtools` middleware:
+```typescript
+export const useMyStore = create()(
+  devtools(
+    persist(
+      (set, get) => ({...}),
+      { name: 'my-store' }
+    ),
+    { name: 'MyStore' }
+  )
+);
+```
+
+### 5. Partialize Persisted State
+Only persist what's necessary:
+```typescript
+persist(
+  (set, get) => ({...}),
+  {
+    name: 'wallet-store',
+    partialize: (state) => ({
+      session: state.session,
+      registeredUsers: state.registeredUsers,
+    }),
+  }
+)
+```
+
+---
+
+## Migration Guide
+
+### Migrating from useState to Zustand
+
+**Before:**
+```typescript
+const [isLoading, setIsLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);
+```
+
+**After:**
+```typescript
+import { useUIStore } from '@/store/uiStore';
+
+const setLoading = useUIStore(state => state.setLoading);
+const isLoading = useUIStore(state => state.isLoading('my-component'));
+
+// Usage
+setLoading('my-component', true);
+```
+
+### Migrating Prop Drilling to Zustand
+
+**Before:**
+```typescript
+<Parent>
+  <Child data={data} onAction={handleAction} />
+</Parent>
+```
+
+**After:**
+```typescript
+// In any component
+const data = useMyStore(state => state.data);
+const action = useMyStore(state => state.doAction);
+```
+
+---
+
+## Store Creation Template
+
+```typescript
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+
+interface MyState {
+  // State properties
+  value: string;
+  isLoading: boolean;
   
-  act(() => {
-    result.current.startConnection();
+  // Actions
+  setValue: (value: string) => void;
+  setLoading: (loading: boolean) => void;
+  reset: () => void;
+}
+
+const initialState = {
+  value: '',
+  isLoading: false,
+};
+
+export const useMyStore = create<MyState>()(
+  devtools(
+    persist(
+      (set) => ({
+        ...initialState,
+        
+        setValue: (value) => set({ value }, false, 'setValue'),
+        setLoading: (isLoading) => set({ isLoading }, false, 'setLoading'),
+        reset: () => set(initialState, false, 'reset'),
+      }),
+      {
+        name: 'my-store',
+        partialize: (state) => ({
+          value: state.value,
+        }),
+      }
+    ),
+    { name: 'MyStore' }
+  )
+);
+```
+
+---
+
+## Common Pitfalls
+
+### ❌ Don't Overuse Global State
+Not all state needs to be global. Keep component-specific state local.
+
+### ❌ Don't Store Derived State
+Compute values from state instead of storing them:
+```typescript
+// ❌ Bad
+const filteredItems = useStore(state => state.filteredItems);
+
+// ✅ Good
+const items = useStore(state => state.items);
+const filteredItems = useMemo(() => filter(items), [items]);
+```
+
+### ❌ Don't Forget TypeScript
+Always type your stores properly:
+```typescript
+interface MyState {
+  value: string;
+  setValue: (value: string) => void;
+}
+```
+
+---
+
+## Testing Stores
+
+```typescript
+import { useMyStore } from '@/store/myStore';
+
+describe('MyStore', () => {
+  it('should update value', () => {
+    const { setValue } = useMyStore.getState();
+    setValue('test');
+    expect(useMyStore.getState().value).toBe('test');
   });
-  
-  expect(result.current.status).toBe('connecting');
-  
-  act(() => {
-    result.current.completeConnection(mockSession);
-  });
-  
-  expect(result.current.status).toBe('connected');
-  expect(result.current.session).toEqual(mockSession);
 });
 ```
 
-### Integration Testing
+---
 
-```tsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { useWalletStore } from '@/store';
+## Resources
 
-// Reset store before each test
-beforeEach(() => {
-  useWalletStore.getState().reset();
-});
-```
-
-## Performance
-
-- **Selective subscriptions** - Components only re-render when used state changes
-- **Computed values** - Use selectors for derived state
-- **Persistence** - Critical state (wallet, theme) persists across sessions
-- **DevTools** - Only enabled in development builds
-
-## Troubleshooting
-
-### Common Issues
-
-1. **State not persisting** - Check if store has `persist` middleware
-2. **Components not updating** - Ensure you're using the hook, not direct store access
-3. **DevTools not working** - Install Redux DevTools extension
-4. **TypeScript errors** - Ensure all store types are properly exported
-
-### Debug Commands
-
-```tsx
-// Reset all stores
-useWalletStore.getState().reset();
-useUIStore.getState().reset();
-useFilterStore.getState().reset();
-useFormStore.getState().reset();
-
-// Inspect current state
-console.log('Wallet:', useWalletStore.getState());
-console.log('UI:', useUIStore.getState());
-```
+- [Zustand Documentation](https://github.com/pmndrs/zustand)
+- [Zustand Best Practices](https://docs.pmnd.rs/zustand/getting-started/introduction)
+- [When to Use Global State](https://kentcdodds.com/blog/application-state-management-with-react)
