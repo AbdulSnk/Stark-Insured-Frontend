@@ -311,7 +311,8 @@ export const ClaimForm = () => {
           onChange={handleFileChange}
           error={errors.evidence}
         />
-      </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
         <Link href="/" className="sm:order-first">
