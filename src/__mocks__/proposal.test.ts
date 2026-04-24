@@ -1,4 +1,4 @@
-import { proposalService } from '../src/services/proposalService';
+import { proposalService } from '../services/proposalService';
 
 describe('Proposal Service', () => {
   it('creates a proposal', () => {

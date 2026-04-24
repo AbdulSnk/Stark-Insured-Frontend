@@ -1,4 +1,8 @@
 import '@testing-library/jest-dom'
+import { TextEncoder, TextDecoder } from 'util'
+
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
 
 // Configure fast-check for property-based testing
 import fc from 'fast-check'
@@ -61,4 +65,12 @@ jest.mock('@/hooks/useAnalytics', () => ({
       trackError: jest.fn(),
     }
   },
+}))
+
+// Mock NotificationContext
+jest.mock('@/context/NotificationContext', () => ({
+  useNotificationContext: () => ({
+    addNotification: jest.fn()
+  }),
+  NotificationProvider: ({ children }) => children,
 }))

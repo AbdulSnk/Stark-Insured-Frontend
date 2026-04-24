@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useWalletStore } from '@/store';
 import { connectFreighter, signFreighterMessage, createAuthMessage } from '@/lib/freighter';
 import { useWalletErrorHandler } from '@/hooks/useErrorHandler';
@@ -9,6 +9,33 @@ import { useWalletErrorHandler } from '@/hooks/useErrorHandler';
  * Integrates with error handling system for better user experience
  */
 export function useWallet() {
+  const {
+    status,
+    session,
+    error,
+    setStatus,
+    setSession,
+    setError,
+    signOut,
+    isAddressRegistered,
+    registerAddress,
+    getRegisteredUser,
+    startConnection,
+    completeConnection,
+    failConnection,
+  } = useWalletStore();
+
+
+  const {
+    executeWithErrorHandling,
+    handleError,
+    showSuccessNotification,
+    showErrorNotification,
+    retryLastOperation,
+    hasError,
+    canRetry
+  } = useWalletErrorHandler();
+
     // Session expiration watcher
     React.useEffect(() => {
       if (!session || !session.expiresAt) return;
@@ -25,31 +52,6 @@ export function useWallet() {
       }, session.expiresAt - now);
       return () => clearTimeout(timeout);
     }, [session, signOut, showErrorNotification]);
-  const {
-    status,
-    session,
-    error,
-    setStatus,
-    setSession,
-    setError,
-    signOut,
-    isAddressRegistered,
-    registerAddress,
-    getRegisteredUser,
-    startConnection,
-    completeConnection,
-    failConnection,
-  } = useWalletStore();
-  
-  const {
-    executeWithErrorHandling,
-    handleError,
-    showSuccessNotification,
-    showErrorNotification,
-    retryLastOperation,
-    hasError,
-    canRetry
-  } = useWalletErrorHandler();
 
   const connectWallet = useCallback(async () => {
     if (session) return session; // Already connected
