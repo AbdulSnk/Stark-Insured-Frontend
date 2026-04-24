@@ -185,7 +185,7 @@ describe('PolicyService', () => {
       const result = await policyService.calculatePremium(request);
       
       expect(result.riskMultiplier).toBe(1.2);
-      expect(result.breakdown.riskComponent).toBe(50); // 250 * 0.2
+      expect(result.breakdown.riskComponent).toBeCloseTo(50); // 250 * 0.2
     });
 
     it('should apply risk multiplier for low credit score', async () => {
@@ -196,7 +196,7 @@ describe('PolicyService', () => {
       const result = await policyService.calculatePremium(request);
       
       expect(result.riskMultiplier).toBe(1.15);
-      expect(result.breakdown.riskComponent).toBe(37.5); // 250 * 0.15
+      expect(result.breakdown.riskComponent).toBeCloseTo(37.5); // 250 * 0.15
     });
 
     it('should apply multiple risk factors', async () => {

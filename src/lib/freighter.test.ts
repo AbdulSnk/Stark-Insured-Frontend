@@ -23,20 +23,20 @@ describe('freighter utilities', () => {
     it('throws error when wallet not connected', async () => {
       (freighterApi.isConnected as jest.Mock).mockResolvedValue({ isConnected: false });
 
-      await expect(connectFreighter()).rejects.toThrow('Freighter wallet extension not detected');
+      await expect(connectFreighter()).rejects.toThrow('Freighter wallet extension not found.');
     });
 
     it('throws error when connection fails', async () => {
       (freighterApi.isConnected as jest.Mock).mockResolvedValue({ error: 'Connection failed' });
 
-      await expect(connectFreighter()).rejects.toThrow('Connection failed');
+      await expect(connectFreighter()).rejects.toThrow('A wallet error occurred. Please reconnect or try again later.');
     });
 
     it('throws error when no address returned', async () => {
       (freighterApi.isConnected as jest.Mock).mockResolvedValue({ isConnected: true });
       (freighterApi.requestAccess as jest.Mock).mockResolvedValue({});
 
-      await expect(connectFreighter()).rejects.toThrow('Unable to retrieve wallet address');
+      await expect(connectFreighter()).rejects.toThrow('A wallet error occurred. Please reconnect or try again later.');
     });
   });
 
@@ -72,7 +72,7 @@ describe('freighter utilities', () => {
     it('throws error on signing failure', async () => {
       (freighterApi.signMessage as jest.Mock).mockResolvedValue({ error: 'User rejected' });
 
-      await expect(signFreighterMessage('GTEST123', 'test')).rejects.toThrow('User rejected');
+      await expect(signFreighterMessage('GTEST123', 'test')).rejects.toThrow('Transaction was rejected by wallet.');
     });
   });
 
